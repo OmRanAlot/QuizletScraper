@@ -3,15 +3,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.action_chains import ActionChains
 import time
 import threading
 import logging
 import firebase_admin
 from firebase_admin import credentials, db
+import settings
 
 #Connect to firebase
 cred = credentials.Certificate('cred.json')
-firebase_admin.initialize_app(cred, {'databaseURL': 'https://flashcard-plus-default-rtdb.firebaseio.com/'})
+firebase_admin.initialize_app(cred, {'databaseURL': settings.db_url})
 
 #https://console.firebase.google.com/u/0/project/flashcard-plus/database/flashcard-plus-default-rtdb/data/~2F
 
@@ -24,6 +26,7 @@ def setup_driver():
     options = webdriver.ChromeOptions()
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--ignore-ssl-errors')
+    options.page_load_strategy = 'normal'
   
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
@@ -45,21 +48,30 @@ def get_quizlet_data(driver):
 
 def main(url, filename, USR, PWD):
     driver = setup_driver()
+
+    #Go to login page
     driver.get("https://quizlet.com/login")
-    #id - username
-    #id - password
-    time.sleep(2)
+
+    # Get elements for username and password
     user = driver.find_element(By.ID, "username")
-    user.send_keys(USR)
-    time.sleep(2)
     pwd = driver.find_element(By.ID, "password")
+
+    #Create Mouse Object 
+    action = ActionChains(driver)
+    time.sleep(2)
+    action.move_to_element(user).perform()
+    time.sleep(90)
+
+    for char in USR:
+        user.send_keys(char)
+    time.sleep(2)
     pwd.send_keys(PWD)
     time.sleep(2)
     pwd.send_keys(Keys.ENTER)
 
-    time.sleep(5)
+    time.sleep(50)
 
-    driver.get(url)
+    # driver.get(url)
 
     # Event to signal threads to terminate
     terminate_event = threading.Event()
