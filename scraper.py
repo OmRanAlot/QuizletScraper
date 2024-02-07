@@ -11,21 +11,27 @@ import firebase_admin
 from firebase_admin import credentials, db
 import settings
 
+'''
+NOTES
+try inscepting the cloudflare message and tell the bot to click the checkbox
+
+'''
+
+
 #Connect to firebase
 cred = credentials.Certificate('cred.json')
 firebase_admin.initialize_app(cred, {'databaseURL': settings.db_url})
-
-
-
 
 def test():
     return "testing"
 
 #sets up drivers
 def setup_driver():
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36"
     options = webdriver.ChromeOptions()
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--ignore-ssl-errors')
+    options.add_argument(f"user-agent={user_agent}")
     options.page_load_strategy = 'normal'
   
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
@@ -58,15 +64,18 @@ def main(url, filename, USR, PWD):
 
     #Create Mouse Object 
     action = ActionChains(driver)
-    time.sleep(2)
+    time.sleep(1)
     action.move_to_element(user).perform()
-    time.sleep(90)
-
     for char in USR:
         user.send_keys(char)
-    time.sleep(2)
-    pwd.send_keys(PWD)
-    time.sleep(2)
+
+    time.sleep(1)
+
+    action.move_to_element(pwd).perform()
+    for char in PWD:
+        pwd.send_keys(char)
+    
+    time.sleep(0.25)
     pwd.send_keys(Keys.ENTER)
 
     time.sleep(50)
