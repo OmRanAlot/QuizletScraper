@@ -15,7 +15,7 @@ import settings
 cred = credentials.Certificate('cred.json')
 firebase_admin.initialize_app(cred, {'databaseURL': settings.db_url})
 
-#https://console.firebase.google.com/u/0/project/flashcard-plus/database/flashcard-plus-default-rtdb/data/~2F
+
 
 
 def test():
