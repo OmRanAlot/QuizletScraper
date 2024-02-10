@@ -4,6 +4,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.action_chains import ActionChains
+import undetected_chromedriver as uc
 import time
 import threading
 import logging
@@ -34,7 +35,9 @@ def setup_driver():
     options.add_argument(f"user-agent={user_agent}")
     options.page_load_strategy = 'normal'
   
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    options.add_argument("--disable-dev-shm-usage")  # Disable /dev/shm usage
+
+    return uc.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 #get future quizlets
 def get_quizlet_data(driver):
@@ -78,9 +81,29 @@ def main(url, filename, USR, PWD):
     time.sleep(0.25)
     pwd.send_keys(Keys.ENTER)
 
-    time.sleep(50)
+    time.sleep(5)
+    print("testing")
+    time.sleep(1)
 
-    # driver.get(url)
+    try:
+        cloudflare = driver.find_elements(By.XPATH,"//div[@class='c16al452']//iframe")
+        # cloudflare = driver.find_elements(By.ID,"cf-chl-widget-cfoza")
+        # print(cloudflare)
+        # print("type: ", type(cloudflare))
+        # print(len(cloudflare))
+        
+        driver.switch_to.frame(cloudflare[0])
+        time.sleep(2)
+
+        checkbox = driver.find_element(By.XPATH, "//input[@type='checkbox']")
+        print(checkbox)
+        checkbox.click()
+        print("clicked!")
+        time.sleep(1000)
+
+    except Exception as e:
+        print("couldnt find element")
+    time.sleep(200)
 
     # Event to signal threads to terminate
     terminate_event = threading.Event()
@@ -99,7 +122,6 @@ def main(url, filename, USR, PWD):
             # Create a dictionary
             for x in range(len(terms)):
                 results[str(terms[x].text)] = str(definitions[x].text)
-
 
             end_time = time.time()
             total_time = end_time - start_time
