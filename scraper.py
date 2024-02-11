@@ -6,7 +6,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.action_chains import ActionChains
 import undetected_chromedriver as uc
 import time
-import threading
 import logging
 import firebase_admin
 from firebase_admin import credentials, db
@@ -39,7 +38,7 @@ class Scraper():
         self.options.add_argument('--ignore-ssl-errors')
         self.options.add_argument("--disable-dev-shm-usage")  # Disable /dev/shm usage
 
-        self.options.page_load_strategy = 'normal'
+        self.options.page_load_strategy = 'eager'
 
         try: 
             return uc.Chrome(service=Service(ChromeDriverManager().install()), options=self.options)
@@ -55,7 +54,7 @@ class Scraper():
 
         #Create Mouse Object 
         action = ActionChains(self.driver)
-        time.sleep(1)
+        time.sleep(0.5)
 
         action.move_to_element(userElement).perform()
         for char in self.usr:
@@ -68,25 +67,43 @@ class Scraper():
         for char in self.pwd:
             pwdElement.send_keys(char)
         
-        time.sleep(0.25)
+        time.sleep(1)
         pwdElement.send_keys(Keys.ENTER)
         print("pressed enter")
-        time.sleep(0.1)
+        time.sleep(10)
 
     def query(self):
         print("started query method")
+        time.sleep(3)
+
         self.driver.get(self.url)
-        self.results = {}
-        time.sleep(1)
+        print("went to url")
+
+        self.results = []
+        self.results2 = []
+        
+        time.sleep(5)
         print("before it tries to get terms and definations \n")
         try:
             # Get the actual terms and definitions
-            terms = self.driver.find_elements(By.CLASS_NAME, "SetPageTerm-wordText")
-            definitions = self.driver.find_elements(By.CLASS_NAME, "SetPageTerm-definitionText")
+            all = self.driver.find_elements(By.CLASS_NAME, "TermText notranslate lang-en")
+            self.results.append(all)
 
+            
+            root = self.driver.find_elements(By.XPATH, "//div[@class='SetPageTerms-term']")
+            print(root)
+            print(len(root))
+            for x in root:
+                term = x.find_element(By.XPATH, "//div[@class='s1etjelq']//div[1]//div//div//span").text
+                defination = x.find_element(By.XPATH, "//div[@class='s1etjelq']//div[2]//div//div//span").text
+
+                self.results2.append({str(term):str(defination)})
+            
             # Create a dictionary
-            for x in range(len(terms)):
-                self.results[str(terms[x].text)] = str(definitions[x].text)
+
+            print("Results1: " + self.results)
+            print("")
+            print("Results2: " + self.results2)
 
             db.reference(str(self.flashcardSetName)).push(self.results)
             print("pushed all terms!")
@@ -96,7 +113,12 @@ class Scraper():
 
         finally:
             print("closing")
+            for window_handle in self.driver.window_handles:
+                self.driver.switch_to.window(window_handle)
+                self.driver.close()
+
             self.driver.quit() #clsoe window
+            time.sleep(1)
 
 #sets up drivers
 
