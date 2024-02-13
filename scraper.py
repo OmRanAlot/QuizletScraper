@@ -12,10 +12,11 @@ import firebase_admin
 from firebase_admin import credentials, db
 import settings
 import json
+import retrying
+
 
 '''
 NOTES
-try inscepting the cloudflare message and tell the bot to click the checkbox
 
 '''
 
@@ -28,7 +29,7 @@ class Scraper():
         self.flashcardSetName = flashcardSetName
 
         #Connect to firebase
-        self.cred = credentials.Certificate('cred.json')
+        self.cred = firebase_admin.credentials.Certificate('cred.json')
         firebase_admin.initialize_app(self.cred, {'databaseURL': settings.db_url})
 
     def setup_driver(self):
@@ -41,6 +42,8 @@ class Scraper():
         self.options.add_argument('--ignore-certificate-errors')
         self.options.add_argument('--ignore-ssl-errors')
         self.options.add_argument("--disable-dev-shm-usage")  # Disable /dev/shm usage
+
+        # self.options.add_argument('--headless')
 
         self.options.page_load_strategy = 'eager'
 
@@ -102,15 +105,14 @@ class Scraper():
                 term = stem[count].text
                 defination = stem[count+1].text
 
-                print("Term: "+term)
-                print("Defination: "+defination)
+                # print("Term: "+term)
+                # print("Defination: "+defination)
                 count+=2
-                print("\n")
+                # print("\n")
                 self.results.append({str(term):str(defination)})
             
             print("Results1: " + str(self.results))
             print("")
-
 
             self.sendtoDB(self.flashcardSetName, self.results)
             print("pushed all terms!")
@@ -128,5 +130,11 @@ class Scraper():
             print("total time" + str(time.time() - self.start_time))
             time.sleep(1)
 
+    @retrying.retry(wait_exponential_multiplier=1000, wait_exponential_max=10000)
     def sendtoDB(self, ref, data):
-        db.reference(ref).push(data)
+        try:
+            json_data = json.dumps(data)
+            db.reference(ref).set(json_data)
+        except firebase_admin.exceptions.FirebaseError as e:
+            logging.error(f"Failed to send data to Firebase: {e}")
+     
