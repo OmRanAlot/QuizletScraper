@@ -37,7 +37,7 @@ class Scraper():
 
         self.options = webdriver.ChromeOptions()
         
-        self.options.add_argument(f"user-agent={self.user_agent}")
+        # self.options.add_argument(f"user-agent={self.user_agent}")
         self.options.add_argument('--ignore-certificate-errors')
         self.options.add_argument('--ignore-ssl-errors')
         self.options.add_argument("--disable-dev-shm-usage")  # Disable /dev/shm usage
@@ -111,9 +111,8 @@ class Scraper():
             print("Results1: " + str(self.results))
             print("")
 
-            json_string = json.dump(self.results)
 
-            db.reference(str(self.flashcardSetName)).push(json_string)
+            self.sendtoDB(self.flashcardSetName, self.results)
             print("pushed all terms!")
 
         except Exception as e:
@@ -129,4 +128,5 @@ class Scraper():
             print("total time" + str(time.time() - self.start_time))
             time.sleep(1)
 
-
+    def sendtoDB(self, ref, data):
+        db.reference(ref).push(data)
