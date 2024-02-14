@@ -29,7 +29,7 @@ class Scraper():
         self.flashcardSetName = flashcardSetName
 
         #Connect to firebase
-        self.cred = firebase_admin.credentials.Certificate('cred.json')
+        self.cred = credentials.Certificate('cred.json')
         firebase_admin.initialize_app(self.cred, {'databaseURL': settings.db_url})
 
     def setup_driver(self):
@@ -92,7 +92,7 @@ class Scraper():
         print("went to url")
         print("time " + str(time.time()-self.start_time))
 
-        self.results = []
+        self.results = {}
         
         time.sleep(5)
         print("before it tries to get terms and definations \n")
@@ -105,11 +105,9 @@ class Scraper():
                 term = stem[count].text
                 defination = stem[count+1].text
 
-                # print("Term: "+term)
-                # print("Defination: "+defination)
                 count+=2
-                # print("\n")
-                self.results.append({str(term):str(defination)})
+                
+                self.results[str(term)] = str(defination)
             
             print("Results1: " + str(self.results))
             print("")
