@@ -13,7 +13,6 @@ sg.theme('DarkGrey11')   # Add a touch of color
 folder = []
 
 ref = db.reference('/')
-# Function to recursively get all references and add them to a list
 for key in ref.get().keys():
     folder.append(key)
 
