@@ -21,13 +21,14 @@ NOTES
 '''
 
 class Scraper():
-    def __init__(self, url, usr, pwd, flashcardSetName):
+    def __init__(self, url, flashcardSetName, usr, pwd, folder):
         self.driver = self.setup_driver()
         self.url = url
         self.usr = usr
         self.pwd = pwd
         self.flashcardSetName = flashcardSetName
-
+        self.folder = folder
+        
         #Connect to firebase
         self.cred = credentials.Certificate('cred.json')
         firebase_admin.initialize_app(self.cred, {'databaseURL': settings.db_url})

@@ -5,3 +5,4 @@ def findLongest(arr):
             longest = len(i)
     
     return longest
+
