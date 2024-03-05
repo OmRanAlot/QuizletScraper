@@ -12,13 +12,8 @@ import firebase_admin
 from firebase_admin import credentials, db
 import settings
 import json
-import retrying
-
-
-'''
-NOTES
-
-'''
+import os
+from seleniumbase import Driver
 
 class Scraper():
     def __init__(self, url, flashcardSetName, usr, pwd, folder):
@@ -27,19 +22,18 @@ class Scraper():
         self.usr = usr
         self.pwd = pwd
         self.flashcardSetName = flashcardSetName
-        self.folder = folder
         
-        #Connect to firebase
-        self.cred = credentials.Certificate('cred.json')
-        firebase_admin.initialize_app(self.cred, {'databaseURL': settings.db_url})
+        #Connect to firebase - if you want
+        # self.cred = credentials.Certificate('cred.json')
+        # firebase_admin.initialize_app(self.cred, {'databaseURL': settings.db_url})
 
     def setup_driver(self):
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36"
         self.start_time = time.time()
 
-        self.options = webdriver.ChromeOptions()
+        self.options = uc.ChromeOptions()
         
-        # self.options.add_argument(f"user-agent={self.user_agent}")
+        self.options.add_argument(f"user-agent={self.user_agent}")
         self.options.add_argument('--ignore-certificate-errors')
         self.options.add_argument('--ignore-ssl-errors')
         self.options.add_argument("--disable-dev-shm-usage")  # Disable /dev/shm usage
@@ -47,15 +41,16 @@ class Scraper():
         # self.options.add_argument('--headless')
 
         self.options.page_load_strategy = 'eager'
-
-        try: 
-            return uc.Chrome(service=Service(ChromeDriverManager().install()), options=self.options)
+       
+        try:
+            return uc.Chrome()
         except:
-            pass
+            print("Undetected Chromedriver failed, using regular Chromedriver.")
+            return webdriver.Chrome(options=self.options)
 
     def login_process(self):
         self.driver.get("https://quizlet.com/login")
-
+        
         # Get elements for username and password
         userElement = self.driver.find_element(By.ID, "username")
         pwdElement = self.driver.find_element(By.ID, "password")
@@ -82,6 +77,7 @@ class Scraper():
     def query(self):
         print("time @ query method: " + str(time.time()-self.start_time))
 
+        self.driver.get(self.url)
         #load page
         time.sleep(2)
         self.driver.set_page_load_timeout(15)
@@ -107,13 +103,22 @@ class Scraper():
                 defination = stem[count+1].text
 
                 count+=2
-                
                 self.results[str(term)] = str(defination)
             
-            print("Results1: " + str(self.results))
-            print("")
+            json_data = json.dumps(self.results)
+            with open(self.flashcardSetName+".json", "w") as f:
+                f.write(json_data)
 
-            self.sendtoDB(self.flashcardSetName, self.results)
+
+            #IF you want to use firebase
+            # try:
+            #     json_data = json.dumps(self.results)
+            #     refer = db.reference(self.folder)
+            #     refer.push(self.flashcardSetName).set(json_data)
+
+            # except firebase_admin.exceptions.FirebaseError as e:
+            #     logging.error(f"Failed to send data to Firebase: {e}")
+
             print("pushed all terms!")
 
         except Exception as e:
@@ -128,12 +133,3 @@ class Scraper():
             self.driver.quit() #clsoe window
             print("total time" + str(time.time() - self.start_time))
             time.sleep(1)
-
-    @retrying.retry(wait_exponential_multiplier=1000, wait_exponential_max=10000)
-    def sendtoDB(self, ref, data):
-        try:
-            json_data = json.dumps(data)
-            db.reference(ref).set(json_data)
-        except firebase_admin.exceptions.FirebaseError as e:
-            logging.error(f"Failed to send data to Firebase: {e}")
-     
